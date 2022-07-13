@@ -1,0 +1,60 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import easyocr
+import imutils
+import cv2
+# import Image file
+
+img=cv2.imread('D:/img2.jpg')
+gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+plt.imshow(cv2.cvtColor(gray,cv2.COLOR_BGR2RGB))
+
+# Apply gray and blur filter to recognize number plate
+
+bfilter=cv2.bilateralFilter(gray,11,17,17)
+edged=cv2.Canny(bfilter,30,200) # Edge detection in image and noise reduction
+plt.imshow(cv2.cvtColor(edged,cv2.COLOR_BGR2RGB))
+
+# Detect total 10 contours 
+
+keypoint=cv2.findContours(edged.copy(),cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE) #detect total counters which are simple
+contours=imutils.grab_contours(keypoint) #collecting contours using imutils
+contours=sorted(contours,key=cv2.contourArea,reverse=True)[:10] #sort only 10 contours which are simple
+
+location=None
+for contour in contours:
+    approx=cv2.approxPolyDP(contour,10,True) #count max 10 contour
+    if len(approx)==4:    # calculating 4 end point touching each other
+        location=approx
+        break  #if above condition match then break
+
+print('this is location where the number plate is',location)
+
+# Create black mask and pass gray image
+
+mask=np.zeros(gray.shape,np.uint8)
+new_img=cv2.drawContours(mask,[location],0,255,-1)
+new_img=cv2.bitwise_and(img,img,mask=mask)
+
+plt.imshow(cv2.cvtColor(new_img,cv2.COLOR_BGR2RGB))
+
+(x,y)=np.where(mask==255)
+(x1,y1)=(np.min(x),np.min(y))
+(x2,y2)=(np.max(x),np.max(y))
+croped_img=gray[x1:x2+1,y1:y2+1]
+
+plt.imshow(cv2.cvtColor(croped_img,cv2.COLOR_BGR2RGB))
+
+# read the number plate using easyocr
+
+reader=easyocr.Reader(['en']) #Read the number plate in english 'en'
+result=reader.readtext(croped_img) #Read text from croped image
+result
+
+# detect the edge of number plate and read the text
+
+text=result[0][-2]  #taking number of numberplate from result list which is at last second index of zero
+font=cv2.FONT_HERSHEY_SIMPLEX
+res=cv2.putText(img,text=text,org=(approx[0][0][0],approx[0][0][1]+80),fontFace=font,fontScale=1,color=(0,255,0),thickness=2,lineType=cv2.LINE_AA)
+res=cv2.rectangle(img,tuple(approx[0][0]),tuple(approx[2][0]),(0,255,0),3)
+plt.imshow(cv2.cvtColor(res,cv2.COLOR_BGR2RGB))
