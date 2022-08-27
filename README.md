@@ -58,3 +58,8 @@ dt=DecisionTreeClassifier()
 dt.fit(x_train,y_train)
 d=dt.score(x_test,y_test)
 print('Accuracy of DecisionTree:',d)
+from sklearn.ensemble import RandomForestClassifier
+rfc=RandomForestClassifier()
+rfc.fit(x_train,y_train)
+e=rfc.score(x_test,y_test)
+print('Accuracy of RandomForest:',e)
